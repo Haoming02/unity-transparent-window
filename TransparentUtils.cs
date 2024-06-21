@@ -5,16 +5,22 @@ public static class TransparentUtils
 {
     private static IntPtr window;
 
-    public static void Init(bool transparent = false, bool clickthrough = false, bool alwayonstop = false)
+    private static bool clickThrough;
+    private static bool noIcon;
+
+    public static void Init(bool transparent = false, bool clickthrough = false, bool alwayonstop = false, bool noicon = false)
     {
         window = GetActiveWindow();
 
         if (transparent)
             EnableTransparency();
-        if (clickthrough)
-            EnableClickThrough();
         if (alwayonstop)
             EnableAlwaysOnTop();
+
+        clickThrough = clickthrough;
+        noIcon = noicon;
+
+        setWindowLong();
     }
 
     [DllImport("user32.dll")]
@@ -26,6 +32,7 @@ public static class TransparentUtils
     private const int GWL_EXSTYLE = -20;
     private const uint WS_EX_LAYERED = 0x00080000;
     private const uint WS_EX_TRANSPARENT = 0x00000020;
+    private const uint WS_EX_TOOLWINDOW = 0x00000080;
 
     [DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -36,14 +43,39 @@ public static class TransparentUtils
     [DllImport("Dwmapi.dll")]
     private static extern uint DwmExtendFrameIntoClientArea(IntPtr hWnd, ref Margins margins);
 
+    private static void setWindowLong()
+    {
+        uint style = WS_EX_LAYERED;
+        if (clickThrough)
+            style |= WS_EX_TRANSPARENT;
+        if (noIcon)
+            style |= WS_EX_TOOLWINDOW;
+
+        SetWindowLong(window, GWL_EXSTYLE, style);
+    }
+
     public static void EnableClickThrough()
     {
-        SetWindowLong(window, GWL_EXSTYLE, WS_EX_LAYERED | WS_EX_TRANSPARENT);
+        clickThrough = true;
+        setWindowLong();
     }
 
     public static void DisableClickThrough()
     {
-        SetWindowLong(window, GWL_EXSTYLE, WS_EX_LAYERED);
+        clickThrough = false;
+        setWindowLong();
+    }
+
+    public static void ShowIcon()
+    {
+        noIcon = false;
+        setWindowLong();
+    }
+
+    public static void HideIcon()
+    {
+        noIcon = true;
+        setWindowLong();
     }
 
     public static void EnableAlwaysOnTop()

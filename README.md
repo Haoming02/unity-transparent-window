@@ -5,4 +5,4 @@ A simple script that lets you build applications with transparent background, wh
 
 <hr>
 
-- Full Credit to: [Code Monkey](https://www.youtube.com/@CodeMonkeyUnity)
+- Credits to: [Code Monkey](https://www.youtube.com/@CodeMonkeyUnity)
