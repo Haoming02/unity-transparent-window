@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using UnityEngine;
 
 public static class TransparentUtils
 {
     private static IntPtr window;
 
+    private static bool useColorKey;
     private static bool clickThrough;
     private static bool noIcon;
 
-    public static void Init(bool transparent = false, bool clickthrough = false, bool alwayonstop = false, bool noicon = false)
+    public static void Init(bool transparent = false, bool clickthrough = false, bool alwayonstop = false, bool noicon = false, Color32? crKey = null)
     {
         window = GetActiveWindow();
 
@@ -17,10 +19,18 @@ public static class TransparentUtils
         if (alwayonstop)
             EnableAlwaysOnTop();
 
+        useColorKey = (crKey != null);
+
         clickThrough = clickthrough;
         noIcon = noicon;
 
         setWindowLong();
+
+        if (useColorKey)
+        {
+            uint key = (uint)((crKey?.r << 16) | (crKey?.g << 8) | (crKey?.b));
+            SetLayeredWindowAttributes(window, key, 0, LWA_COLORKEY);
+        }
     }
 
     [DllImport("user32.dll")]
@@ -40,13 +50,18 @@ public static class TransparentUtils
     private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
     private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
 
+    [DllImport("user32.dll")]
+    private static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint crKey, byte bAlpha, uint dwFlags);
+
+    private const uint LWA_COLORKEY = 0x00000001;
+
     [DllImport("Dwmapi.dll")]
     private static extern uint DwmExtendFrameIntoClientArea(IntPtr hWnd, ref Margins margins);
 
     private static void setWindowLong()
     {
         uint style = WS_EX_LAYERED;
-        if (clickThrough)
+        if (!useColorKey && clickThrough)
             style |= WS_EX_TRANSPARENT;
         if (noIcon)
             style |= WS_EX_TOOLWINDOW;
